@@ -36,7 +36,7 @@ double* AllocateMemoryAndZerosVector(int size)
 	return vector;
 }
 
-double* MultiplyMatrixByVector(double** matrix, double* vector, const int size, double& duration)
+double* MultiplyMatrixByVector(double** matrix, double* vector, int size, double& duration)
 {
 	double* resultVector = AllocateMemoryAndZerosVector(size);
 	double startOmp = omp_get_wtime();
@@ -56,7 +56,7 @@ double* MultiplyMatrixByVector(double** matrix, double* vector, const int size, 
 	return resultVector;
 }
 
-void MultiplyMatrixByVectorAndReturn(double* resultVector, double** matrix, double* vector, const int size, double& duration)
+void MultiplyMatrixByVectorAndReturn(double* resultVector, double** matrix, double* vector, int size, double& duration)
 {
 	double startOmp = omp_get_wtime();
 
