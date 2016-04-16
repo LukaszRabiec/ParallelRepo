@@ -6,6 +6,9 @@
 #include <cmath>
 #include <cassert>
 #include <omp.h>
+#include <fstream>
+
+using namespace std;
 
 double** AllocateMemoryAndZerosMatrix(int size)
 {
@@ -177,7 +180,7 @@ double* FillVector(int size, bool inSequenceVector)
 			vector[i] = ((double)i) + 1.0;
 		}
 	}
-	else
+	/*else
 	{
 		srand(time(0));
 
@@ -185,7 +188,7 @@ double* FillVector(int size, bool inSequenceVector)
 		{
 			vector[i] = (double)(rand() % 10);
 		}
-	}
+	}*/
 
 	return vector;
 }
@@ -245,57 +248,97 @@ void TestDot()
 	assert(DotVectors(tab1, tab2, 2) == 11.0);
 }
 
+bool ValidateArguments(int argc, char** argv)
+{
+	if (argc != 6)
+	{
+		cout << "Invalid number of arguments!\nCorrect values: 'programName' 'iterations' 'sizeMin' 'sizeMax' 'sizeStep' 'procNum'!" << endl;
+		getchar();
+		return false;
+	}
+
+	if (atoi(argv[1]) > atoi(argv[2]))
+	{
+		cout << "sizeMax(arg 4) must be greater or equal than sizeMin(arg 3)!" << endl;
+		getchar();
+		return false;
+	}
+
+	if (atoi(argv[5]) < 1)
+	{
+		cout << "procNum(arg 6) must be greater or equal 1" << endl;
+		getchar();
+		return false;
+	}
+
+	return true;
+}
+
 int main(int argc, char** argv)
 {
-	if (argc != 4)
+	if (!ValidateArguments(argc, argv))
 	{
-		std::cout << "Invalid number of arguments!\nCorrect values: 'programName' 'matrixSize' 'iterationsNumber' 'procNumber'!" << std::endl;
-		getchar();
 		return 0;
 	}
 
-	int size, iterations, proc;
+	ofstream outFile;
+	int iterations, sizeMin, sizeMax, sizeStep, procNum;
+	double timeOmp = 0.0;
+	double dot = 0.0;
+	double** matrix = 0;
+	double* vector = 0;
+	double* resultVector = 0;
 
-	size = atoi(argv[1]);
-	iterations = atoi(argv[2]);
-	proc = atoi(argv[3]);
+	iterations = atoi(argv[1]);
+	sizeMin = atoi(argv[2]);
+	sizeMax = atoi(argv[3]);
+	sizeStep = atoi(argv[4]);
+	procNum = atoi(argv[5]);
 
-	double** matrix = AllocateMemoryAndZerosMatrix(size);
-	double* vector = AllocateMemoryAndZerosVector(size);
-	matrix = FillMatrix(size);
-	vector = FillVector(size, true);
-	NormalizeVector(vector, size);
+	outFile.open("dotVectorData.txt");
 
-	omp_set_num_threads(proc);
+	cout << "Starting calculations... please wait.\n" << endl;
+	cout << "Size:\t\tCores:\t\tDot:\t\tTime:" << endl;
 
-	double time = 0.0;
-	double* resultVector = AllocateMemoryAndZerosVector(size);
-
-	for (int i = 0; i < iterations; i++)
+	for (int size = sizeMin; size <= sizeMax; size += sizeStep)
 	{
-		MultiplyMatrixByVectorAndReturn(resultVector, matrix, vector, size, time);
-		NormalizeVector(resultVector, size);
-		SwapVectors(resultVector, vector, size);
+		for (int proc = 1; proc <= procNum; proc++)
+		{
+			timeOmp = 0.0;
+			omp_set_num_threads(proc);
+
+			matrix = AllocateMemoryAndZerosMatrix(size);
+			vector = AllocateMemoryAndZerosVector(size);
+			resultVector = AllocateMemoryAndZerosVector(size);
+			matrix = FillMatrix(size);
+			vector = FillVector(size, true);
+
+			for (int i = 0; i < iterations; i++)
+			{
+				MultiplyMatrixByVectorAndReturn(resultVector, matrix, vector, size, timeOmp);
+				NormalizeVector(resultVector, size);
+				SwapVectors(resultVector, vector, size);
+			}
+
+			MultiplyMatrixByVectorAndReturn(vector, matrix, resultVector, size, timeOmp);
+			dot = DotVectors(vector, resultVector, size);
+
+			cout << size << "\t\t" << proc << "\t\t" << dot << "\t\t" << timeOmp << endl;
+			outFile << size << "\t" << proc << "\t" << dot << "\t" << timeOmp << endl;
+		}
 	}
-	
-	printf("Matrix size: %dx%d\n", size, size);
-	printf("Number of iterations: %d\n", iterations);
-	printf("\nTime for %d threads: %.13fs\n", proc, time);
-	//printf("\nVector length: %f\n", VectorLength(resultVector, size));
-	TestDot();
 
-	MultiplyMatrixByVectorAndReturn(vector, matrix, resultVector, size, time);
+	outFile.close();
 
-	printf("DOT: %.13e\n", DotVectors(vector, resultVector, size)); 
+	//for (int i = 0; i < size; i++)
+	//{
+	//	delete[] matrix[i];
+	//}
+	//delete[] matrix;
+	//delete[] vector;
+	//delete[] resultVector;
 
-	for (int i = 0; i < size; i++)
-	{
-		delete[] matrix[i];
-	}
-	delete[] matrix;
-	delete[] vector;
-	delete[] resultVector;
-
+	cout << "\nDone. Check data file. Press key to close." << endl;
 	getchar();
 	return EXIT_SUCCESS;
 }
