@@ -109,13 +109,15 @@ double** ReadMatrixFromFile(const char* fileName, int &size)
 	double** matrix = AllocateMemoryAndZerosMatrix(size);
 
 	int row, col;
+	double value;
 	while (!feof(file))
 	{
 		fscanf(file, "%d %d", &row, &col);
-		fscanf(file, "%lf", &matrix[row - 1][col - 1]);
+		fscanf(file, "%lf", &value);
+		matrix[row - 1][col - 1] = value;
 		if (row != col)
 		{
-			matrix[col - 1][row - 1];
+			matrix[col - 1][row - 1] = value;
 		}
 	}
 
