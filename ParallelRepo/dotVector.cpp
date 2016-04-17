@@ -42,7 +42,6 @@ double* AllocateMemoryAndZerosVector(int size)
 double* MultiplyMatrixByVector(double** matrix, double* vector, int size, double& duration)
 {
 	double* resultVector = AllocateMemoryAndZerosVector(size);
-	double startOmp = omp_get_wtime();
 
 #pragma omp parallel for shared(resultVector, matrix, vector, size)	
 	for (int i = 0; i < size; i++)
@@ -54,14 +53,13 @@ double* MultiplyMatrixByVector(double** matrix, double* vector, int size, double
 		}
 		resultVector[i] = sum;
 	}
-	duration = omp_get_wtime() - startOmp;
 
 	return resultVector;
 }
 
-void MultiplyMatrixByVectorAndReturn(double* resultVector, double** matrix, double* vector, int size, double& duration)
+void MultiplyMatrixByVectorAndReturn(double* resultVector, double** matrix, double* vector, int size)
 {
-	double startOmp = omp_get_wtime();
+	//double startOmp = omp_get_wtime();
 
 #pragma omp parallel for shared(resultVector, matrix, vector, size)	
 	for (int i = 0; i < size; i++)
@@ -74,7 +72,7 @@ void MultiplyMatrixByVectorAndReturn(double* resultVector, double** matrix, doub
 		resultVector[i] = sum;
 	}
 
-	duration = omp_get_wtime() - startOmp;
+	//duration = omp_get_wtime() - startOmp;
 }
 
 double** ReadMatrixFromFile(const char* fileName, int &size)
@@ -250,9 +248,9 @@ void TestDot()
 
 bool ValidateArguments(int argc, char** argv)
 {
-	if (argc != 6)
+	if (argc != 7)
 	{
-		cout << "Invalid number of arguments!\nCorrect values: 'programName' 'iterations' 'sizeMin' 'sizeMax' 'sizeStep' 'procNum'!" << endl;
+		cout << "Invalid number of arguments!\nUsage: 'programName' 'iterations' 'sizeMin' 'sizeMax' 'sizeStep' 'procNum' 'fileName'!" << endl;
 		getchar();
 		return false;
 	}
@@ -283,19 +281,21 @@ int main(int argc, char** argv)
 
 	ofstream outFile;
 	int iterations, sizeMin, sizeMax, sizeStep, procNum;
-	double timeOmp = 0.0;
+	double timeOmp = 0.0, startOmp;
 	double dot = 0.0;
 	double** matrix = 0;
 	double* vector = 0;
 	double* resultVector = 0;
+	char* fileName;
 
 	iterations = atoi(argv[1]);
 	sizeMin = atoi(argv[2]);
 	sizeMax = atoi(argv[3]);
 	sizeStep = atoi(argv[4]);
 	procNum = atoi(argv[5]);
+	fileName = argv[6];
 
-	outFile.open("dotVectorData.txt");
+	outFile.open(fileName);
 
 	cout << "Starting calculations... please wait.\n" << endl;
 	cout << "Size:\t\tCores:\t\tDot:\t\tTime:" << endl;
@@ -313,15 +313,19 @@ int main(int argc, char** argv)
 			matrix = FillMatrix(size);
 			vector = FillVector(size, true);
 
+			startOmp = omp_get_wtime();
+
 			for (int i = 0; i < iterations; i++)
 			{
-				MultiplyMatrixByVectorAndReturn(resultVector, matrix, vector, size, timeOmp);
+				MultiplyMatrixByVectorAndReturn(resultVector, matrix, vector, size);
 				NormalizeVector(resultVector, size);
 				SwapVectors(resultVector, vector, size);
 			}
 
-			MultiplyMatrixByVectorAndReturn(vector, matrix, resultVector, size, timeOmp);
+			MultiplyMatrixByVectorAndReturn(vector, matrix, resultVector, size);
 			dot = DotVectors(vector, resultVector, size);
+
+			timeOmp = omp_get_wtime() - startOmp;
 
 			cout << size << "\t\t" << proc << "\t\t" << dot << "\t\t" << timeOmp << endl;
 			outFile << size << "\t" << proc << "\t" << dot << "\t" << timeOmp << endl;
