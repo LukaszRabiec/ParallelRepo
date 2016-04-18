@@ -250,21 +250,21 @@ bool ValidateArguments(int argc, char** argv)
 {
 	if (argc != 7)
 	{
-		cout << "Invalid number of arguments!\nUsage: 'programName' 'iterations' 'sizeMin' 'sizeMax' 'sizeStep' 'procNum' 'fileName'!" << endl;
+		cout << "Invalid number of arguments!\nUsage: 'programName' 'iterations' 'outFileName' 'procNum' 'sizeMin' 'sizeMax' 'sizeStep'!" << endl;
 		getchar();
 		return false;
 	}
 
-	if (atoi(argv[1]) > atoi(argv[2]))
+	if (atoi(argv[4]) > atoi(argv[5]))
 	{
-		cout << "sizeMax(arg 4) must be greater or equal than sizeMin(arg 3)!" << endl;
+		cout << "sizeMax(arg 6) must be greater or equal than sizeMin(arg 5)!" << endl;
 		getchar();
 		return false;
 	}
 
-	if (atoi(argv[5]) < 1)
+	if (atoi(argv[3]) < 1)
 	{
-		cout << "procNum(arg 6) must be greater or equal 1" << endl;
+		cout << "procNum(arg 4) must be greater or equal 1" << endl;
 		getchar();
 		return false;
 	}
@@ -274,11 +274,12 @@ bool ValidateArguments(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-	if (!ValidateArguments(argc, argv))
+	/*if (!ValidateArguments(argc, argv))
 	{
 		return 0;
-	}
+	}*/
 
+	const char* fileName = "bcsstk19.mtx";
 	ofstream outFile;
 	int iterations, sizeMin, sizeMax, sizeStep, procNum;
 	double timeOmp = 0.0, startOmp;
@@ -286,28 +287,29 @@ int main(int argc, char** argv)
 	double** matrix = 0;
 	double* vector = 0;
 	double* resultVector = 0;
-	char* fileName;
+	char* outFileName;
 
 	iterations = atoi(argv[1]);
-	sizeMin = atoi(argv[2]);
-	sizeMax = atoi(argv[3]);
-	sizeStep = atoi(argv[4]);
-	procNum = atoi(argv[5]);
-	fileName = argv[6];
+	outFileName = argv[2];
+	procNum = atoi(argv[3]);
+	//sizeMin = atoi(argv[4]);
+	//sizeMax = atoi(argv[5]);
+	//sizeStep = atoi(argv[6]);
 
-	outFile.open(fileName);
+	outFile.open(outFileName);
 
 	cout << "Starting calculations... please wait.\n" << endl;
 	cout << "Size:\t\tCores:\t\tDot:\t\tTime:" << endl;
 
-	for (int size = sizeMin; size <= sizeMax; size += sizeStep)
-	{
+	//for (int size = sizeMin; size <= sizeMax; size += sizeStep)
+	//{
 		for (int proc = 1; proc <= procNum; proc++)
 		{
 			timeOmp = 0.0;
 			omp_set_num_threads(proc);
-
-			matrix = AllocateMemoryAndZerosMatrix(size);
+			int size;
+			//matrix = AllocateMemoryAndZerosMatrix(size);
+			matrix = ReadMatrixFromFile(fileName, size);
 			vector = AllocateMemoryAndZerosVector(size);
 			resultVector = AllocateMemoryAndZerosVector(size);
 			matrix = FillMatrix(size);
@@ -330,7 +332,7 @@ int main(int argc, char** argv)
 			cout << size << "\t\t" << proc << "\t\t" << dot << "\t\t" << timeOmp << endl;
 			outFile << size << "\t" << proc << "\t" << dot << "\t" << timeOmp << endl;
 		}
-	}
+	//}
 
 	outFile.close();
 
